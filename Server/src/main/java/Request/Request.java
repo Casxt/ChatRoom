@@ -4,7 +4,6 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.nio.channels.AsynchronousSocketChannel;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -12,13 +11,14 @@ import java.util.concurrent.TimeUnit;
  */
 public class Request {
     public AsynchronousSocketChannel ch = null;
-    private LinkedBlockingQueue<Request> ReqQueue;
+    //private LinkedBlockingQueue<Request> ReqQueue;
     private Reader reader = new Reader(this);
     private Writer writer = new Writer(this);
     public RequestCallback callback = null;
 
-    public Request(LinkedBlockingQueue<Request> ReqQueue) {
-        this.ReqQueue = ReqQueue;
+    public Request(RequestCallback cb) {
+        callback = cb;
+        callback.onCreate(this);
     }
 
     public void Response(JSONObject res) {
@@ -32,20 +32,16 @@ public class Request {
      */
     void DataReadComplete(byte[] data) {
         String s = new String(data, java.nio.charset.StandardCharsets.UTF_8);
-        JSONObject body = new JSONObject(s);
-        // offer is a none block method,
-        // put is a block method
-        ReqQueue.offer(this);
-        //在 reader 中处理
-        //reader.Reset();
+
+        callback.onRequest(this, new JSONObject(s));
     }
 
     /**
-     * call GetReq Will Start to collect data until complete
+     * Bundle Will Start to collect data until complete
      *
      * @param ch are socket bound to this
      */
-    public void GetReq(AsynchronousSocketChannel ch) {
+    public void Bundle(AsynchronousSocketChannel ch) {
         // Set Socket
         this.ch = ch;
 
@@ -54,21 +50,12 @@ public class Request {
     }
 
     /**
-     * if KeepOpen is true, the socket will not close after response
-     * can use to reuse connection
-     *
-    public void KeepOpen(boolean keepOpen) {
-        writer.keepOpen = keepOpen;
-    }
-     */
-
-    /**
-     * Close the channel and tirgger callback
+     * Close the channel and trigger callback
      */
     void Close() {
-        if (callback != null) {
-            callback.onReqClose();
-        }
+
+        callback.onReqClose(this);
+
         try {
             ch.close();
         } catch (IOException e) {

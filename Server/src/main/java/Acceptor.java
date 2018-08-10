@@ -3,28 +3,26 @@ import Request.Request;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
-
 
 public class Acceptor implements CompletionHandler<AsynchronousSocketChannel, Request> {
     //Logger
     private static Logger log = Logger.getLogger(Acceptor.class.getName());
 
-    private LinkedBlockingQueue<Request> ReqQueue;
+    private ChatServer chatServer;
     private AsynchronousServerSocketChannel Server;
 
-    Acceptor(AsynchronousServerSocketChannel Server, LinkedBlockingQueue<Request> ReqQueue) {
-        this.ReqQueue = ReqQueue;
+    Acceptor(AsynchronousServerSocketChannel Server, ChatServer chatServer) {
         this.Server = Server;
+        this.chatServer = chatServer;
     }
 
     @Override
     public void completed(AsynchronousSocketChannel ch, Request req) {
         //Deal with this conn
-        req.GetReq(ch);
+        req.Bundle(ch);
         //After accept a conn, we need to reset acceptor
-        Server.accept(new Request(ReqQueue), this);
+        Server.accept(new Request(new ClientEvent(chatServer)), this);
     }
 
     @Override
@@ -34,7 +32,7 @@ public class Acceptor implements CompletionHandler<AsynchronousSocketChannel, Re
             e.getStackTrace();
         } else {
             log.severe(e.toString());
-            Server.accept(new Request(ReqQueue), this);
+            Server.accept(new Request(new ClientEvent(chatServer)), this);
         }
     }
 
