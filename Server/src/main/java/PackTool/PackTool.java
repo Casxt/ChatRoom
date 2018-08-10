@@ -108,7 +108,6 @@ public class PackTool {
      * @return the buffer wait to be send
      */
     public ByteBuffer Construct(byte[] data) {
-        //byte[] head = {'G','r','a','m','b','l','e'};
         CRC32 crc32 = new CRC32();
         crc32.update(data);
 
@@ -143,6 +142,4 @@ public class PackTool {
         }
         return true;
     }
-
-
 }

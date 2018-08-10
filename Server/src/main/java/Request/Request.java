@@ -15,13 +15,14 @@ public class Request {
     private LinkedBlockingQueue<Request> ReqQueue;
     private Reader reader = new Reader(this);
     private Writer writer = new Writer(this);
+    public RequestCallback callback = null;
 
     public Request(LinkedBlockingQueue<Request> ReqQueue) {
         this.ReqQueue = ReqQueue;
     }
 
     public void Response(JSONObject res) {
-        writer.WriteOnce(res.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        writer.Write(res.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     /**
@@ -35,7 +36,8 @@ public class Request {
         // offer is a none block method,
         // put is a block method
         ReqQueue.offer(this);
-        reader.Reset();
+        //在 reader 中处理
+        //reader.Reset();
     }
 
     /**
@@ -54,15 +56,19 @@ public class Request {
     /**
      * if KeepOpen is true, the socket will not close after response
      * can use to reuse connection
-     */
+     *
     public void KeepOpen(boolean keepOpen) {
         writer.keepOpen = keepOpen;
     }
+     */
 
     /**
-     * Close the channel
+     * Close the channel and tirgger callback
      */
     void Close() {
+        if (callback != null) {
+            callback.onReqClose();
+        }
         try {
             ch.close();
         } catch (IOException e) {

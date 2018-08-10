@@ -29,7 +29,7 @@ public class Reader implements CompletionHandler<Integer, AsynchronousSocketChan
                 req.DataReadComplete(data);
                 //准备接收下一次请求,并且不会超时
                 ch.read(Buff, ch, this);
-
+                Reset();
             } else {// if data incomplete, read more
                 if (readTimes < 4) {//if read too many times
                     ch.read(Buff, 10, TimeUnit.SECONDS, ch, this);

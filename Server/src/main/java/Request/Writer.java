@@ -4,64 +4,46 @@ import PackTool.PackTool;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.CompletionHandler;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class Writer implements CompletionHandler<Integer, ByteBuffer> {
+    LinkedBlockingQueue<ByteBuffer> buffers;
+    private int sendTimes = 0;
+    private Request req;
+    private PackTool packer = new PackTool(new byte[]{'C', 'h', 'a', 't'});
     /**
      * If KeepOpen is true, writer will not close the connection,
      * is was useful when there was a long connection,
      * or this request is for client.
      * The default value is false
      */
-    boolean keepOpen = false;
-    private int sendTimes = 0;
-    private Request req;
-    private PackTool packer = new PackTool(new byte[]{'C', 'h', 'a', 't'});
-
+    private boolean isSending = false;
 
     Writer(Request req) {
         this.req = req;
-        //buffer = ByteBuffer.allocate(2048);
-        //packer = new PackTool(new byte[]{'G', 'r', 'a', 'm', 'b', 'l', 'e'});
+        buffers = new LinkedBlockingQueue<>();
     }
-
-    /*
-     * Write Data into buffer, can be call more than once.
-     * this method work with Send(),
-     * And the Write-Send can not use with WriteOnce
-     *
-     * @param data waite to be send
-
-    public void Write(byte[] data) {
-        buffer.put(data);
-    }
-     */
-    /*
-     * Send the data in buffer which written by Write()
-
-    public void Send() {
-        buffer.flip();
-        packer.Construct(buffer);
-        req.ch.write(buffer, buffer, this);
-    }
-     */
 
     /**
-     * WriteOnce the Data to buffer and send and close connection
-     * Only send the data that given, the data write by the Write() will not be send.
-     * faster than Write-Send
+     * Write the Data to buffer and send
      *
      * @param data is the only data need to send
      */
-    void WriteOnce(byte[] data) {
+    void Write(byte[] data) {
         ByteBuffer buffer = packer.Construct(data);
-        req.ch.write(buffer, 10, TimeUnit.SECONDS, buffer, this);
+        if (isSending) {
+            buffers.offer(buffer);
+        } else {
+            req.ch.write(buffer, 10, TimeUnit.SECONDS, buffer, this);
+        }
     }
 
     @Override
     public void completed(Integer result, ByteBuffer buffer) {
         sendTimes++;
         if (result != -1) {
+            // 如果当前buffer没有发送完则继续发送
             if (buffer.hasRemaining()) {
                 if (sendTimes < 4) {
                     req.ch.write(buffer, 10, TimeUnit.SECONDS, buffer, this);
@@ -69,9 +51,15 @@ public class Writer implements CompletionHandler<Integer, ByteBuffer> {
                     req.Close();
                 }
             } else {
-                //如果设置了KeepOn标记, 在一次传输完成后将不会关闭请求
-                if (!keepOpen) {
-                    req.Close();
+                // 取出下一条buffer发送
+                if (!buffers.isEmpty()) {
+                    isSending = true;
+                    sendTimes = 0;
+                    ByteBuffer buf = buffers.poll();
+                    //poll is a nonblocking method
+                    req.ch.write(buf, 10, TimeUnit.SECONDS, buf, this);
+                } else {
+                    isSending = false;
                 }
             }
         } else {
