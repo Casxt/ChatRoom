@@ -8,21 +8,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
 public class Server {
-    private static ConcurrentHashMap<String, Request> Clients;
-    private static AsynchronousServerSocketChannel server;
+    private static ConcurrentHashMap<String, Request> Clients = null;
     private static AsynchronousChannelGroup group;
-    private static Acceptor acceptor;
-    private static ChatServer chatServer;
 
     public static void main(String[] args) throws IOException {
         System.out.println("Server starting...");
         Server.group = AsynchronousChannelGroup.withFixedThreadPool(2, Executors.defaultThreadFactory());
-        Server.Clients = new ConcurrentHashMap<>();
-        chatServer = new ChatServer();
+        ChatServer chatServer = new ChatServer();
+        Server.Clients = ChatServer.Clients;
 
-        server = AsynchronousServerSocketChannel.open(group);
+        AsynchronousServerSocketChannel server = AsynchronousServerSocketChannel.open(group);
         server.bind(new InetSocketAddress("0.0.0.0", 12345));
-        acceptor = new Acceptor(server, chatServer);
+        Acceptor acceptor = new Acceptor(server, chatServer);
         server.accept(new Request(chatServer), acceptor);
     }
 }

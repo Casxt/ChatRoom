@@ -6,14 +6,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ChatServer implements RequestCallback {
-    private static ConcurrentHashMap<String, Request> Clients;
+    static ConcurrentHashMap<String, Request> Clients = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, String> Sessions = new ConcurrentHashMap<>();
 
-    public ChatServer(ConcurrentHashMap<String, Request> Clients) {
-        ChatServer.Clients = Clients;
-
+    ChatServer() {
     }
 
-    public static void Route(Request req, JSONObject json) {
+    private static void Route(Request req, JSONObject json) {
         System.out.println(json.toString());
         switch (json.getString("Action")) {
             case "SignIn":
@@ -39,7 +38,7 @@ public class ChatServer implements RequestCallback {
      * @param req  req
      * @param json json
      */
-    public static void SignIn(Request req, JSONObject json) {
+    private static void SignIn(Request req, JSONObject json) {
         String name = json.getString("Name");
         JSONObject resJSON = new JSONObject();
         resJSON.put("Action", "SignIn");
@@ -49,11 +48,12 @@ public class ChatServer implements RequestCallback {
             req.Response(resJSON);
             return;
         }
+        Clients.put(name, req);
+        Sessions.put(name, UUID.randomUUID().toString());
         resJSON.put("State", "Success")
                 .put("Msg", "You have logined")
-                .put("SessionID", UUID.randomUUID().toString());
+                .put("SessionID", Sessions.get(name));
         req.Response(resJSON);
-        Clients.put(name, req);
         BroadCastExcept(name, name + " has logined");
     }
 
@@ -69,7 +69,7 @@ public class ChatServer implements RequestCallback {
      * @param name specific user
      * @param Msg  BoardCast Msg
      */
-    public static void BroadCastExcept(String name, String Msg) {
+    private static void BroadCastExcept(String name, String Msg) {
         JSONObject resJSON = new JSONObject();
         resJSON.put("Action", "BroadCast")
                 .put("State", "Success")
