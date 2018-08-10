@@ -22,7 +22,7 @@ public class Acceptor implements CompletionHandler<AsynchronousSocketChannel, Re
         //Deal with this conn
         req.Bundle(ch);
         //After accept a conn, we need to reset acceptor
-        Server.accept(new Request(new ClientEvent(chatServer)), this);
+        Server.accept(new Request(chatServer), this);
     }
 
     @Override
@@ -32,7 +32,7 @@ public class Acceptor implements CompletionHandler<AsynchronousSocketChannel, Re
             e.getStackTrace();
         } else {
             log.severe(e.toString());
-            Server.accept(new Request(new ClientEvent(chatServer)), this);
+            Server.accept(new Request(chatServer), this);
         }
     }
 

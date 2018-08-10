@@ -23,6 +23,6 @@ public class Server {
         server = AsynchronousServerSocketChannel.open(group);
         server.bind(new InetSocketAddress("0.0.0.0", 12345));
         acceptor = new Acceptor(server, chatServer);
-        server.accept(new Request(new ClientEvent(chatServer)), acceptor);
+        server.accept(new Request(chatServer), acceptor);
     }
 }
