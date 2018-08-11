@@ -85,8 +85,8 @@ public class ChatServer implements RequestCallback {
      * Msg
      * }
      *
-     * @param req
-     * @param reqJSON
+     * @param req req
+     * @param reqJSON reqJSON
      */
     private static void SignOut(Request req, JSONObject reqJSON) {
         JSONObject resJSON = new JSONObject();
@@ -149,7 +149,7 @@ public class ChatServer implements RequestCallback {
      * Msg
      * }
      *
-     * @param Msg
+     * @param Msg msg to BroadCast
      */
     private static void BroadCast(String Msg) {
         JSONObject resJSON = new JSONObject();
@@ -175,7 +175,7 @@ public class ChatServer implements RequestCallback {
     /**
      * 承担了意外退出的处理功能
      *
-     * @param req
+     * @param req req
      */
     @Override
     public void onReqClose(Request req) {
