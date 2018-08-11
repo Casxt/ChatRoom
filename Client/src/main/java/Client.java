@@ -17,13 +17,13 @@ public class Client implements RequestCallback {
     private Scanner scanner = new Scanner(System.in);
     private boolean endProgramFlag = false;
 
-    public Client(SocketAddress address) {
+    Client(SocketAddress address) {
         this.address = address;
 
     }
 
-    public void Start() {
-        String cmd = "";
+    void Start() {
+        String cmd;
         do {
 
             try {
@@ -66,7 +66,7 @@ public class Client implements RequestCallback {
         JSONObject reqJSON = new JSONObject();
         reqJSON.put("Action", "SignIn")
                 .put("Name", UserName);
-        JSONObject res = null;
+        JSONObject res;
         try {
             res = request.Request(reqJSON, true, 10 * 1000);
         } catch (InterruptedException e) {
