@@ -73,6 +73,7 @@ public class Client implements RequestCallback {
         if (res.getString("State").equals("Success")) {
             this.UserName = UserName;
             this.SessionID = res.getString("SessionID");
+            System.out.println(res.getString("Msg"));
         } else {
             System.out.println(res.getString("Msg"));
         }
