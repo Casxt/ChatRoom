@@ -49,9 +49,12 @@ public class Request {
         writer.Write(req.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
         if (block) {
             this.blocking = true;
+
             waitAction = req.getString("Action");
             //此处阻塞，等待结果返回
-            this.wait(timeout);
+            synchronized (this) {
+                this.wait(timeout);
+            }
             //清空tempRes，防止数据无法释放
             JSONObject temp = tempRes;
             tempRes = null;
@@ -75,7 +78,9 @@ public class Request {
         //判断是否是等待的结果
         if (blocking && json.getString("Action").equals(waitAction)) {
             tempRes = json;
-            this.notify();
+            synchronized (this) {
+                this.notify();
+            }
         }
         //依旧会发起onRequest 事件
         callback.onRequest(this, json);

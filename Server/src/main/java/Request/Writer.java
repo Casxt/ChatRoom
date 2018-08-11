@@ -6,8 +6,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.CompletionHandler;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 public class Writer implements CompletionHandler<Integer, ByteBuffer> {
+    //Logger
+    private static Logger log = Logger.getLogger(Writer.class.getName());
+
     LinkedBlockingQueue<ByteBuffer> buffers;
     private int sendTimes = 0;
     private Request req;
@@ -71,6 +75,9 @@ public class Writer implements CompletionHandler<Integer, ByteBuffer> {
     @Override
     public void failed(Throwable e, ByteBuffer buffer) {
         if (e instanceof java.nio.channels.InterruptedByTimeoutException) {
+            req.Close();
+        } else if (e instanceof java.io.IOException) {
+            log.warning("Connection lost");
             req.Close();
         } else {
             req.Close();
