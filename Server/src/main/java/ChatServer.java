@@ -111,6 +111,11 @@ public class ChatServer implements RequestCallback {
 
         Sessions.remove(name);
         Clients.remove(name);
+
+        resJSON.put("State", "Success")
+                .put("Msg", "quit success");
+        req.Response(resJSON);
+
         BroadCast(name + " has quit.");
 
     }

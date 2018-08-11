@@ -15,6 +15,7 @@ public class Client implements RequestCallback {
     private String UserName = null;
     private Request request = new Request(this);
     private Scanner scanner = new Scanner(System.in);
+    private boolean endProgramFlag = false;
 
     public Client(SocketAddress address) {
         this.address = address;
@@ -35,26 +36,28 @@ public class Client implements RequestCallback {
             request.Bundle(serverCh);
             System.out.print("Please login");
 
-            while (true) {
+            while (!endProgramFlag) {
                 cmd = scanner.nextLine();
                 if (cmd.startsWith("/login ")) {
                     SignIn(cmd.substring("/login ".length()));
+                } else if (cmd.startsWith("/quit")) {
+                    SignOut();
                 } else if (UserName == null) {
-                    //这是建立连接后的第一个命令，如果输入任何其他的，都要报错：Invalid command。
+                    //建立连接后的第一个命令，如果输入任何其他的除了login/quit，都要报错：Invalid command。
                     System.out.println("Invalid Command");
                 } else {
                     System.out.println("Invalid Command");
                 }
 
             }
-        } while (true);
+        } while (!endProgramFlag);
     }
 
 
     /**
      * SignIn
      *
-     * @param UserName
+     * @param UserName to sign in
      */
     private void SignIn(String UserName) {
         if (!UserName.matches("^\\S+$")) {
@@ -78,6 +81,31 @@ public class Client implements RequestCallback {
             System.out.println(res.getString("Msg"));
         }
 
+    }
+
+    private void SignOut() {
+        if (UserName == null) {
+            endProgramFlag = true;
+            return;
+        }
+
+        JSONObject reqJSON = new JSONObject(), res;
+        reqJSON.put("Action", "SignOut")
+                .put("Name", UserName)
+                .put("SessionID", SessionID);
+        try {
+            res = request.Request(reqJSON, true, 10 * 1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        if (res.getString("State").equals("Success")) {
+            endProgramFlag = true;
+            System.out.println(res.getString("Msg"));
+        } else {
+            System.out.println(res.getString("Msg"));
+        }
     }
 
     @Override
