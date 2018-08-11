@@ -1,5 +1,6 @@
 import Request.Request;
 import Request.RequestCallback;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.UUID;
@@ -28,8 +29,77 @@ public class ChatServer implements RequestCallback {
             case "SendMsg":
                 SendMsg(req, json);
                 break;
+            case "BroadCastMsg":
+                BroadCastMsg(req, json);
+                break;
         }
 
+    }
+
+    /**
+     * BroadCastMsg BroadCastMsg
+     * req Struct{
+     * Action BroadCastMsg
+     * Name
+     * SessionID
+     * Except String[] 可选参数
+     * Message
+     * }
+     * res {
+     * Action BroadCastMsg
+     * State
+     * Msg
+     * }
+     * res2 {
+     * Action BroadCast
+     * State
+     * From
+     * Msg
+     * }
+     *
+     * @param req     req
+     * @param reqJSON reqJSON
+     */
+    private static void BroadCastMsg(Request req, JSONObject reqJSON) {
+        JSONObject resJSON = new JSONObject();
+        resJSON.put("Action", "BroadCastMsg");
+
+        if (!reqJSON.has("Name") || !reqJSON.has("SessionID") || !reqJSON.has("Message")) {
+            resJSON.put("State", "Failed")
+                    .put("Msg", "Invalid Request Parameter");
+            req.Response(resJSON);
+            return;
+        }
+
+        String name = reqJSON.getString("Name");
+        String sessionID = reqJSON.getString("SessionID");
+        String message = reqJSON.getString("Message");
+        String[] exceptNames = null;
+        if (reqJSON.has("Except")) {
+            JSONArray array = reqJSON.getJSONArray("Except");
+            int l = array.length();
+            exceptNames = new String[l];
+            for (int i = 0; i < l; i++) {
+                exceptNames[i] = array.getString(i);
+            }
+        }
+
+        if (!Sessions.containsKey(name) || !Sessions.get(name).equals(sessionID)) {
+            resJSON.put("State", "Failed")
+                    .put("Msg", "Invalid Request Parameter");
+            req.Response(resJSON);
+            return;
+        }
+
+        resJSON.put("State", "Success")
+                .put("Msg", "Success");
+        req.Response(resJSON);
+
+        if (exceptNames == null) {
+            BroadCast(message);
+            return;
+        }
+        BroadCastExcept(exceptNames, message);
     }
 
     /**
@@ -148,7 +218,7 @@ public class ChatServer implements RequestCallback {
                 .put("Msg", "You have logined")
                 .put("SessionID", Sessions.get(name));
         req.Response(resJSON);
-        BroadCastExcept(name, name + " has logined");
+        BroadCastExcept(new String[]{name}, name + " has logined");
     }
 
     /**
@@ -204,22 +274,33 @@ public class ChatServer implements RequestCallback {
      * res {
      * Action BroadCast
      * State Success
+     * From Server
      * Msg
      * }
      *
-     * @param name specific user
-     * @param Msg  BoardCast Msg
+     * @param names specific user
+     * @param Msg   BoardCast Msg
      */
-    private static void BroadCastExcept(String name, String Msg) {
+    private static void BroadCastExcept(String[] names, String Msg) {
+        assert names != null : "names can not be null";
         JSONObject resJSON = new JSONObject();
         resJSON.put("Action", "BroadCast")
                 .put("State", "Success")
+                .put("From", "Server")
                 .put("Msg", Msg);
+
+        boolean except;
         for (ConcurrentHashMap.Entry<String, Request> entry : Clients.entrySet()) {
-            if (entry.getKey().equals(name)) {
-                continue;
+            except = false;
+            for (String n : names) {
+                if (entry.getKey().equals(n)) {
+                    except = true;
+                    break;
+                }
             }
-            entry.getValue().Response(resJSON);
+            if (!except) {
+                entry.getValue().Response(resJSON);
+            }
         }
 
     }
@@ -229,6 +310,7 @@ public class ChatServer implements RequestCallback {
      * res {
      * Action BroadCast
      * State Success
+     * From Server
      * Msg
      * }
      *
@@ -238,6 +320,7 @@ public class ChatServer implements RequestCallback {
         JSONObject resJSON = new JSONObject();
         resJSON.put("Action", "BroadCast")
                 .put("State", "Success")
+                .put("From", "Server")
                 .put("Msg", Msg);
         for (ConcurrentHashMap.Entry<String, Request> entry : Clients.entrySet()) {
             entry.getValue().Response(resJSON);
