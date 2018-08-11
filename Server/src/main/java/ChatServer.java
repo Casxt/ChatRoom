@@ -25,7 +25,86 @@ public class ChatServer implements RequestCallback {
             case "SignOut":
                 SignOut(req, json);
                 break;
+            case "SendMsg":
+                SendMsg(req, json);
+                break;
         }
+
+    }
+
+    /**
+     * SendMsg to specific user
+     * req Struct{
+     * Action SendMsg
+     * Name
+     * SessionID
+     * To
+     * Message
+     * }
+     * res {
+     * Action SendMsg
+     * State
+     * Msg
+     * }
+     * res2 {
+     * Action Message
+     * State
+     * From
+     * Msg
+     * }
+     *
+     * @param req     req
+     * @param reqJSON reqJSON
+     */
+    private static void SendMsg(Request req, JSONObject reqJSON) {
+        JSONObject resJSON = new JSONObject();
+        resJSON.put("Action", "SendMsg");
+
+        if (!reqJSON.has("Name") || !reqJSON.has("SessionID") || !reqJSON.has("To") || !reqJSON.has("Message")) {
+            resJSON.put("State", "Failed")
+                    .put("Msg", "Invalid Request Parameter");
+            req.Response(resJSON);
+            return;
+        }
+
+        String name = reqJSON.getString("Name");
+        String sessionID = reqJSON.getString("SessionID");
+        String to = reqJSON.getString("To");
+        String message = reqJSON.getString("Message");
+
+        if (!Sessions.containsKey(name) || !Sessions.get(name).equals(sessionID)) {
+            resJSON.put("State", "Failed")
+                    .put("Msg", "Invalid Request Parameter");
+            req.Response(resJSON);
+            return;
+        }
+
+        if (!Clients.containsKey(to)) {
+            resJSON.put("State", "Failed")
+                    .put("Msg", to + " is not online.");
+            req.Response(resJSON);
+            return;
+        }
+
+        if (to.equals(name)) {
+            resJSON.put("State", "Failed")
+                    .put("Msg", "Stop talking to yourself!");
+            req.Response(resJSON);
+            return;
+        }
+
+        //对比builder和format
+        //https://stackoverflow.com/questions/44117788/performance-between-string-format-and-stringbuilder
+        resJSON.put("State", "Success")
+                .put("Msg", "Success");
+        req.Response(resJSON);
+
+        JSONObject sendJSON = new JSONObject();
+        sendJSON.put("Action", "Message");
+        sendJSON.put("State", "Success")
+                .put("From", name)
+                .put("Msg", message);
+        Clients.get(to).Response(sendJSON);
 
     }
 
@@ -42,7 +121,7 @@ public class ChatServer implements RequestCallback {
      * SessionID
      * }
      *
-     * @param req  req
+     * @param req     req
      * @param reqJSON json
      */
     private static void SignIn(Request req, JSONObject reqJSON) {
@@ -85,7 +164,7 @@ public class ChatServer implements RequestCallback {
      * Msg
      * }
      *
-     * @param req req
+     * @param req     req
      * @param reqJSON reqJSON
      */
     private static void SignOut(Request req, JSONObject reqJSON) {
@@ -119,7 +198,6 @@ public class ChatServer implements RequestCallback {
         BroadCast(name + " has quit.");
 
     }
-
 
     /**
      * BroadCastExcept specific user
