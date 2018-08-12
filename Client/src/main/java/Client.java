@@ -6,6 +6,8 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 
@@ -17,6 +19,8 @@ public class Client implements RequestCallback {
     private Request request = new Request(this);
     private Scanner scanner = new Scanner(System.in);
     private boolean endProgramFlag = false;
+    //考虑到随机访问的需求，使用ArrayList
+    private List<String> history = new ArrayList<>(200);
 
     Client(SocketAddress address) {
         this.address = address;
@@ -37,6 +41,7 @@ public class Client implements RequestCallback {
             request.Bundle(serverCh);
             System.out.println("Please login");
 
+            //考虑到命令格式都比较简单，故不使用正则匹配，另一方面也更加高效
             while (!endProgramFlag) {
                 cmd = scanner.nextLine();
                 if (cmd.startsWith("/login ")) {
@@ -48,6 +53,16 @@ public class Client implements RequestCallback {
                 } else if (UserName == null) {
                     //建立连接后的第一个命令，如果输入任何其他的除了login/quit，都要报错：Invalid command。
                     System.out.println("Invalid Command");
+                } else if (cmd.startsWith("/history")) {
+                    String[] arg = cmd.split(" ", 3);
+                    int len = history.size();
+                    switch (arg.length) {
+                        case 1:
+                            for (int i = len > 50 ? len - 50 : 0; i < len; i++) {
+                                System.out.print(String.format("第%s条", i + 1));
+                                System.out.println(history.get(i));
+                            }
+                    }
                 } else if (cmd.startsWith("/to ")) {
                     //定向发送
                     String[] arg = cmd.split(" ", 3);
@@ -58,31 +73,38 @@ public class Client implements RequestCallback {
                     //送给对方
                     if (SendTo(arg[1], String.format("%s对你说：%s", UserName, arg[2]))) {
                         //显示给自己
-                        System.out.println(String.format("你对%s说：%s", arg[1], arg[2]));
+                        String t = String.format("你对%s说：%s", arg[1], arg[2]);
+                        System.out.println(t);
+                        history.add(t);
                     }
                 } else if (cmd.equals("//hi") || cmd.startsWith("//hi ")) {
-                    //表情:hi
+                    //预设消息:hi
                     String[] arg = cmd.split(" ", 2);
                     switch (arg.length) {
                         case 1:
                             if (BroadCast(new String[]{UserName}, UserName + "向大家打招呼，“Hi，大家好！我来咯~”。")) {
                                 System.out.println("你向大家打招呼，“Hi，大家好！我来咯~”。");
+                                history.add("你向大家打招呼，“Hi，大家好！我来咯~”。");
                             }
 
                             break;
                         case 2:
                             if (SendTo(arg[1], String.format("%s向你打招呼：“Hi，你好啊~”。", UserName))) {
                                 if (BroadCast(new String[]{UserName, arg[1]}, String.format("%s向%s打招呼：“Hi，你好啊~”", UserName, arg[1]))) {
-                                    System.out.println(String.format("你向%s打招呼：“Hi，你好啊~”。", arg[1]));
+                                    String t = String.format("你向%s打招呼：“Hi，你好啊~”。", arg[1]);
+                                    System.out.println(t);
+                                    history.add(t);
                                 }
                             }
                             break;
                     }
                 } else if (!cmd.startsWith("/")) {
                     //广播消息
-                    if (BroadCast(null, String.format("%s说：%s", UserName, cmd))) {
+                    if (BroadCast(new String[]{UserName}, String.format("%s说：%s", UserName, cmd))) {
                         //显示给自己
-                        System.out.println("你说：" + cmd);
+                        String t = "你说：" + cmd;
+                        System.out.println(t);
+                        history.add(t);
                     }
                 } else {
                     System.out.println("Invalid Command");
@@ -183,6 +205,7 @@ public class Client implements RequestCallback {
         }
         try {
             res = request.Request(reqJSON, true, 10 * 1000);
+            //TODO Check Null
         } catch (InterruptedException e) {
             e.printStackTrace();
             return false;
@@ -211,14 +234,18 @@ public class Client implements RequestCallback {
         if (!json.getString("State").equals("Success")) {
             return;
         }
+        String m = json.getString("Msg");
         switch (json.getString("Action")) {
             case "Message":
-                System.out.println(json.getString("Msg"));
+                System.out.println(m);
+                history.add(m);
                 break;
             case "BroadCast":
-                System.out.println(json.getString("Msg"));
+                System.out.println(m);
+                history.add(m);
                 break;
         }
+
     }
 
     @Override
