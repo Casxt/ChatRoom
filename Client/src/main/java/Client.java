@@ -51,6 +51,12 @@ public class Client implements RequestCallback {
             e.printStackTrace();
             return;
         }
+
+        if (res == null) {
+            System.out.println(_FUNC_() + " request error");
+            return;
+        }
+
         if (res.getString("State").equals("Success")) {
             this.UserName = UserName;
             this.SessionID = res.getString("SessionID");
@@ -78,6 +84,11 @@ public class Client implements RequestCallback {
             return;
         }
 
+        if (res == null) {
+            System.out.println(_FUNC_() + " request error");
+            return;
+        }
+
         if (res.getString("State").equals("Success")) {
             endProgramFlag = true;
             System.out.println(res.getString("Msg"));
@@ -97,6 +108,11 @@ public class Client implements RequestCallback {
             res = request.Request(reqJSON, true, 10 * 1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
+            return false;
+        }
+
+        if (res == null) {
+            System.out.println(_FUNC_() + " request error");
             return false;
         }
 
@@ -122,9 +138,13 @@ public class Client implements RequestCallback {
         }
         try {
             res = request.Request(reqJSON, true, 10 * 1000);
-            //TODO Check Null
         } catch (InterruptedException e) {
             e.printStackTrace();
+            return false;
+        }
+
+        if (res == null) {
+            System.out.println(_FUNC_() + " request error");
             return false;
         }
 
@@ -133,6 +153,30 @@ public class Client implements RequestCallback {
         }
         System.out.println(res.getString("Msg"));
         return false;
+    }
+
+    private void ListUsers() {
+        JSONObject reqJSON = new JSONObject(), res;
+        reqJSON.put("Action", "ListUsers")
+                .put("Name", UserName)
+                .put("SessionID", SessionID);
+        try {
+            res = request.Request(reqJSON, true, 10 * 1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        if (res == null) {
+            System.out.println(_FUNC_() + " request error");
+            return;
+        }
+
+        if (res.getString("State").equals("Success")) {
+            System.out.println(res.getString("Msg"));
+        } else {
+            System.out.println(res.getString("Msg"));
+        }
     }
 
     void Start() {
@@ -278,29 +322,5 @@ public class Client implements RequestCallback {
     @Override
     public void onReqClose(Request req) {
 
-    }
-
-    private void ListUsers() {
-        JSONObject reqJSON = new JSONObject(), res;
-        reqJSON.put("Action", "ListUsers")
-                .put("Name", UserName)
-                .put("SessionID", SessionID);
-        try {
-            res = request.Request(reqJSON, true, 10 * 1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return;
-        }
-
-        if (res == null) {
-            System.out.println(_FUNC_() + " request error");
-            return;
-        }
-
-        if (res.getString("State").equals("Success")) {
-            System.out.println(res.getString("Msg"));
-        } else {
-            System.out.println(res.getString("Msg"));
-        }
     }
 }
