@@ -24,7 +24,6 @@ public class Client implements RequestCallback {
 
     Client(SocketAddress address) {
         this.address = address;
-
     }
 
     void Start() {
@@ -44,7 +43,7 @@ public class Client implements RequestCallback {
             //考虑到命令格式都比较简单，故不使用正则匹配，另一方面也更加高效
             while (!endProgramFlag) {
                 cmd = scanner.nextLine();
-                if (cmd.startsWith("/login ")) {
+                if (UserName == null && cmd.startsWith("/login ")) {
                     //登陆
                     SignIn(cmd.substring("/login ".length()));
                 } else if (cmd.startsWith("/quit")) {
@@ -59,9 +58,31 @@ public class Client implements RequestCallback {
                     switch (arg.length) {
                         case 1:
                             for (int i = len > 50 ? len - 50 : 0; i < len; i++) {
-                                System.out.print(String.format("第%s条", i + 1));
+                                System.out.print(String.format("第%s条--", i + 1));
                                 System.out.println(history.get(i));
                             }
+                            break;
+                        case 3:
+                            int s, e;
+                            try {
+                                s = Integer.parseInt(arg[1]);
+                                e = Integer.parseInt(arg[2]);
+                            } catch (NumberFormatException E) {
+                                System.out.println("Invalid Number");
+                                break;
+                            }
+                            if (s < 0 || e > len || !(s <= e)) {
+                                System.out.println("Number out of range");
+                                break;
+                            }
+                            for (int i = s - 1; i < e; i++) {
+                                System.out.print(String.format("第%s条--", i + 1));
+                                System.out.println(history.get(i));
+                            }
+                            break;
+                        default:
+                            System.out.println("Invalid Command");
+                            break;
                     }
                 } else if (cmd.startsWith("/to ")) {
                     //定向发送
@@ -109,7 +130,6 @@ public class Client implements RequestCallback {
                 } else {
                     System.out.println("Invalid Command");
                 }
-
             }
         } while (!endProgramFlag);
     }
