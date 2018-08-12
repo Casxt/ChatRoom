@@ -19,6 +19,9 @@ public class ChatServer implements RequestCallback {
 
     private static void Route(Request req, JSONObject json) {
         System.out.println(json.toString());
+        if (!json.has("Action")) {
+            return;
+        }
         switch (json.getString("Action")) {
             case "SignIn":
                 SignIn(req, json);
