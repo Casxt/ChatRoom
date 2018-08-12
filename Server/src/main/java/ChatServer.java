@@ -32,6 +32,9 @@ public class ChatServer implements RequestCallback {
             case "BroadCastMsg":
                 BroadCastMsg(req, json);
                 break;
+            case "ListUsers":
+                ListUsers(req, json);
+                break;
         }
 
     }
@@ -270,6 +273,52 @@ public class ChatServer implements RequestCallback {
     }
 
     /**
+     * ListUsers
+     * req {
+     * Action ListUsers
+     * Name
+     * SessionID
+     * }
+     * res {
+     * Action ListUsers
+     * State
+     * Msg String
+     * }
+     *
+     * @param req     req
+     * @param reqJSON reqJSON
+     */
+    private static void ListUsers(Request req, JSONObject reqJSON) {
+        JSONObject resJSON = new JSONObject();
+        resJSON.put("Action", "ListUsers");
+
+        if (!reqJSON.has("Name") || !reqJSON.has("SessionID")) {
+            resJSON.put("State", "Failed")
+                    .put("Msg", "Invalid Request Parameter");
+            req.Response(resJSON);
+            return;
+        }
+
+        String name = reqJSON.getString("Name");
+        String sessionID = reqJSON.getString("SessionID");
+
+        if (!Sessions.containsKey(name) || !Sessions.get(name).equals(sessionID)) {
+            resJSON.put("State", "Failed")
+                    .put("Msg", "Invalid Request Parameter");
+            req.Response(resJSON);
+            return;
+        }
+        StringBuilder sb = new StringBuilder(5 * Sessions.size());
+        for (String n : Sessions.keySet()) {
+            sb.append(n).append("\r\n");
+        }
+        sb.append("Total online user: ").append(Sessions.size());
+        resJSON.put("State", "Success")
+                .put("Msg", sb.toString());
+        req.Response(resJSON);
+    }
+
+    /**
      * BroadCastExcept specific user
      * res {
      * Action BroadCast
@@ -305,6 +354,7 @@ public class ChatServer implements RequestCallback {
 
     }
 
+
     /**
      * BroadCast
      * res {
@@ -325,7 +375,6 @@ public class ChatServer implements RequestCallback {
         for (ConcurrentHashMap.Entry<String, Request> entry : Clients.entrySet()) {
             entry.getValue().Response(resJSON);
         }
-
     }
 
     @Override

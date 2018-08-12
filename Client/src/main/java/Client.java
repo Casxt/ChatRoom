@@ -26,112 +26,9 @@ public class Client implements RequestCallback {
         this.address = address;
     }
 
-    void Start() {
-        String cmd;
-        do {
-
-            try {
-                serverCh = AsynchronousSocketChannel.open();
-                serverCh.connect(address).get();
-            } catch (IOException | InterruptedException | ExecutionException e) {
-                System.out.println("Connect Failed...");
-                e.printStackTrace();
-            }
-            request.Bundle(serverCh);
-            System.out.println("Please login");
-
-            //考虑到命令格式都比较简单，故不使用正则匹配，另一方面也更加高效
-            while (!endProgramFlag) {
-                cmd = scanner.nextLine();
-                if (UserName == null && cmd.startsWith("/login ")) {
-                    //登陆
-                    SignIn(cmd.substring("/login ".length()));
-                } else if (cmd.startsWith("/quit")) {
-                    //退出
-                    SignOut();
-                } else if (UserName == null) {
-                    //建立连接后的第一个命令，如果输入任何其他的除了login/quit，都要报错：Invalid command。
-                    System.out.println("Invalid Command");
-                } else if (cmd.startsWith("/history")) {
-                    String[] arg = cmd.split(" ", 3);
-                    int len = history.size();
-                    switch (arg.length) {
-                        case 1:
-                            for (int i = len > 50 ? len - 50 : 0; i < len; i++) {
-                                System.out.print(String.format("第%s条--", i + 1));
-                                System.out.println(history.get(i));
-                            }
-                            break;
-                        case 3:
-                            int s, e;
-                            try {
-                                s = Integer.parseInt(arg[1]);
-                                e = Integer.parseInt(arg[2]);
-                            } catch (NumberFormatException E) {
-                                System.out.println("Invalid Number");
-                                break;
-                            }
-                            if (s < 0 || e > len || !(s <= e)) {
-                                System.out.println("Number out of range");
-                                break;
-                            }
-                            for (int i = s - 1; i < e; i++) {
-                                System.out.print(String.format("第%s条--", i + 1));
-                                System.out.println(history.get(i));
-                            }
-                            break;
-                        default:
-                            System.out.println("Invalid Command");
-                            break;
-                    }
-                } else if (cmd.startsWith("/to ")) {
-                    //定向发送
-                    String[] arg = cmd.split(" ", 3);
-                    if (arg.length < 3) {
-                        System.out.println("Invalid Command, should be /to user_name");
-                        return;
-                    }
-                    //送给对方
-                    if (SendTo(arg[1], String.format("%s对你说：%s", UserName, arg[2]))) {
-                        //显示给自己
-                        String t = String.format("你对%s说：%s", arg[1], arg[2]);
-                        System.out.println(t);
-                        history.add(t);
-                    }
-                } else if (cmd.equals("//hi") || cmd.startsWith("//hi ")) {
-                    //预设消息:hi
-                    String[] arg = cmd.split(" ", 2);
-                    switch (arg.length) {
-                        case 1:
-                            if (BroadCast(new String[]{UserName}, UserName + "向大家打招呼，“Hi，大家好！我来咯~”。")) {
-                                System.out.println("你向大家打招呼，“Hi，大家好！我来咯~”。");
-                                history.add("你向大家打招呼，“Hi，大家好！我来咯~”。");
-                            }
-
-                            break;
-                        case 2:
-                            if (SendTo(arg[1], String.format("%s向你打招呼：“Hi，你好啊~”。", UserName))) {
-                                if (BroadCast(new String[]{UserName, arg[1]}, String.format("%s向%s打招呼：“Hi，你好啊~”", UserName, arg[1]))) {
-                                    String t = String.format("你向%s打招呼：“Hi，你好啊~”。", arg[1]);
-                                    System.out.println(t);
-                                    history.add(t);
-                                }
-                            }
-                            break;
-                    }
-                } else if (!cmd.startsWith("/")) {
-                    //广播消息
-                    if (BroadCast(new String[]{UserName}, String.format("%s说：%s", UserName, cmd))) {
-                        //显示给自己
-                        String t = "你说：" + cmd;
-                        System.out.println(t);
-                        history.add(t);
-                    }
-                } else {
-                    System.out.println("Invalid Command");
-                }
-            }
-        } while (!endProgramFlag);
+    private static String _FUNC_() {
+        StackTraceElement traceElement = ((new Exception()).getStackTrace())[1];
+        return traceElement.getMethodName();
     }
 
 
@@ -238,6 +135,116 @@ public class Client implements RequestCallback {
         return false;
     }
 
+    void Start() {
+        String cmd;
+        do {
+
+            try {
+                serverCh = AsynchronousSocketChannel.open();
+                serverCh.connect(address).get();
+            } catch (IOException | InterruptedException | ExecutionException e) {
+                System.out.println("Connect Failed...");
+                e.printStackTrace();
+            }
+            request.Bundle(serverCh);
+            System.out.println("Please login");
+
+            //考虑到命令格式都比较简单，故不使用正则匹配，另一方面也更加高效
+            while (!endProgramFlag) {
+                cmd = scanner.nextLine();
+                if (UserName == null && cmd.startsWith("/login ")) {
+                    //登陆
+                    SignIn(cmd.substring("/login ".length()));
+                } else if (cmd.startsWith("/quit")) {
+                    //退出
+                    SignOut();
+                } else if (UserName == null) {
+                    //建立连接后的第一个命令，如果输入任何其他的除了login/quit，都要报错：Invalid command。
+                    System.out.println("Invalid Command");
+                } else if (cmd.startsWith("/who")) {
+                    ListUsers();
+                } else if (cmd.startsWith("/history")) {
+                    String[] arg = cmd.split(" ", 3);
+                    int len = history.size();
+                    switch (arg.length) {
+                        case 1:
+                            for (int i = len > 50 ? len - 50 : 0; i < len; i++) {
+                                System.out.print(String.format("第%s条--", i + 1));
+                                System.out.println(history.get(i));
+                            }
+                            break;
+                        case 3:
+                            int s, e;
+                            try {
+                                s = Integer.parseInt(arg[1]);
+                                e = Integer.parseInt(arg[2]);
+                            } catch (NumberFormatException E) {
+                                System.out.println("Invalid Number");
+                                break;
+                            }
+                            if (s < 0 || e > len || !(s <= e)) {
+                                System.out.println("Number out of range");
+                                break;
+                            }
+                            for (int i = s - 1; i < e; i++) {
+                                System.out.print(String.format("第%s条--", i + 1));
+                                System.out.println(history.get(i));
+                            }
+                            break;
+                        default:
+                            System.out.println("Invalid Command");
+                            break;
+                    }
+                } else if (cmd.startsWith("/to ")) {
+                    //定向发送
+                    String[] arg = cmd.split(" ", 3);
+                    if (arg.length < 3) {
+                        System.out.println("Invalid Command, should be /to user_name");
+                        return;
+                    }
+                    //送给对方
+                    if (SendTo(arg[1], String.format("%s对你说：%s", UserName, arg[2]))) {
+                        //显示给自己
+                        String t = String.format("你对%s说：%s", arg[1], arg[2]);
+                        System.out.println(t);
+                        history.add(t);
+                    }
+                } else if (cmd.equals("//hi") || cmd.startsWith("//hi ")) {
+                    //预设消息:hi
+                    String[] arg = cmd.split(" ", 2);
+                    switch (arg.length) {
+                        case 1:
+                            if (BroadCast(new String[]{UserName}, UserName + "向大家打招呼，“Hi，大家好！我来咯~”。")) {
+                                System.out.println("你向大家打招呼，“Hi，大家好！我来咯~”。");
+                                history.add("你向大家打招呼，“Hi，大家好！我来咯~”。");
+                            }
+
+                            break;
+                        case 2:
+                            if (SendTo(arg[1], String.format("%s向你打招呼：“Hi，你好啊~”。", UserName))) {
+                                if (BroadCast(new String[]{UserName, arg[1]}, String.format("%s向%s打招呼：“Hi，你好啊~”", UserName, arg[1]))) {
+                                    String t = String.format("你向%s打招呼：“Hi，你好啊~”。", arg[1]);
+                                    System.out.println(t);
+                                    history.add(t);
+                                }
+                            }
+                            break;
+                    }
+                } else if (!cmd.startsWith("/")) {
+                    //广播消息
+                    if (BroadCast(new String[]{UserName}, String.format("%s说：%s", UserName, cmd))) {
+                        //显示给自己
+                        String t = "你说：" + cmd;
+                        System.out.println(t);
+                        history.add(t);
+                    }
+                } else {
+                    System.out.println("Invalid Command");
+                }
+            }
+        } while (!endProgramFlag);
+    }
+
     @Override
     public void onCreate(Request req) {
 
@@ -271,5 +278,29 @@ public class Client implements RequestCallback {
     @Override
     public void onReqClose(Request req) {
 
+    }
+
+    private void ListUsers() {
+        JSONObject reqJSON = new JSONObject(), res;
+        reqJSON.put("Action", "ListUsers")
+                .put("Name", UserName)
+                .put("SessionID", SessionID);
+        try {
+            res = request.Request(reqJSON, true, 10 * 1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        if (res == null) {
+            System.out.println(_FUNC_() + " request error");
+            return;
+        }
+
+        if (res.getString("State").equals("Success")) {
+            System.out.println(res.getString("Msg"));
+        } else {
+            System.out.println(res.getString("Msg"));
+        }
     }
 }
