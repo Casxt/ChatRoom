@@ -120,14 +120,6 @@ public class PackTool {
         return b;
     }
 
-    /* never used function
-    public ByteBuffer Construct(ByteBuffer buffer) {
-        byte[] data = new byte[buffer.remaining()];
-        buffer.get(data);
-        return Construct(data);
-    }
-    */
-
     /**
      * test data in ring buffer, if it match head, return true
      *

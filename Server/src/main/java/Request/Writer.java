@@ -12,7 +12,7 @@ public class Writer implements CompletionHandler<Integer, ByteBuffer> {
     //Logger
     private static Logger log = Logger.getLogger(Writer.class.getName());
 
-    LinkedBlockingQueue<ByteBuffer> buffers;
+    private LinkedBlockingQueue<ByteBuffer> buffers;
     private int sendTimes = 0;
     private Request req;
     private PackTool packer = new PackTool(new byte[]{'C', 'h', 'a', 't'});

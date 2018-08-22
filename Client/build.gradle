@@ -5,12 +5,13 @@ plugins {
 group 'Maple'
 version '1.0-SNAPSHOT'
 
-sourceCompatibility = 1.8
+sourceCompatibility = 1.10
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile group: 'org.json', name: 'json', version: '20180130'
+    compile project(':Server')
 }

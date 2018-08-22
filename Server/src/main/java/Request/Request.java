@@ -10,12 +10,12 @@ import java.util.concurrent.TimeUnit;
  * Request.Request will format a socket data into request
  */
 public class Request {
-    public AsynchronousSocketChannel ch = null;
-    //private LinkedBlockingQueue<Request> ReqQueue;
+    AsynchronousSocketChannel ch = null;
+
+    //callback 由初始化函数初始化
+    private RequestCallback callback;
     private Reader reader = new Reader(this);
     private Writer writer = new Writer(this);
-    public RequestCallback callback = null;
-
     private String waitAction = null;
     private boolean blocking = false;
     private JSONObject tempRes = null;
@@ -26,25 +26,24 @@ public class Request {
     }
 
     /**
-     * Response 用于服务器返回消息
+     * Send 用于服务器返回消息
      *
-     * @param res
+     * @param res 返回相应
      */
-    public void Response(JSONObject res) {
+    public void Send(JSONObject res) {
         writer.Write(res.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     /**
-     * Request 用于向服务器请求，可以阻塞
+     * Send 用于向服务器请求，可以阻塞
      * 如果是阻塞请求，通过tempRes方式将结果返回
      *
-     * @param req
      * @param block   阻塞/非阻塞模式
      * @param timeout the maximum time to wait in milliseconds.
-     * @return
+     * @return JSONObject
      * @throws InterruptedException 未测试
      */
-    public JSONObject Request(JSONObject req, boolean block, long timeout) throws InterruptedException {
+    public JSONObject Send(JSONObject req, boolean block, long timeout) throws InterruptedException {
         assert !(blocking && block) : "不能在阻塞调用期间再次发起阻塞调用";
         writer.Write(req.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
         if (block) {
@@ -63,13 +62,9 @@ public class Request {
         return null;
     }
 
-    public JSONObject Request(JSONObject req) throws InterruptedException {
-        return Request(req, false, 0);
-    }
-
     /**
      * When reader read complete it will call this function
-     *
+     * 当读取出一条消息时，会调用这个函数，将数据作为参数传入
      * @param data is the reader return back
      */
     void DataReadComplete(byte[] data) {
@@ -88,7 +83,7 @@ public class Request {
 
     /**
      * Bundle Will Start to collect data until complete
-     *
+     * 将Request实例与一个channel绑定
      * @param ch are socket bound to this
      */
     public void Bundle(AsynchronousSocketChannel ch) {
@@ -101,6 +96,7 @@ public class Request {
 
     /**
      * Close the channel and trigger callback
+     * 关闭 channel 并触发回调
      */
     void Close() {
 

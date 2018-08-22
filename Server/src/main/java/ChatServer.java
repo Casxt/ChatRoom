@@ -11,7 +11,7 @@ public class ChatServer implements RequestCallback {
     //Logger
     private static Logger log = Logger.getLogger(ChatServer.class.getName());
 
-    static ConcurrentHashMap<String, Request> Clients = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, Request> Clients = new ConcurrentHashMap<>();
     private static ConcurrentHashMap<String, String> Sessions = new ConcurrentHashMap<>();
 
     ChatServer() {
@@ -38,12 +38,19 @@ public class ChatServer implements RequestCallback {
             case "ListUsers":
                 ListUsers(req, json);
                 break;
+            default:
+                JSONObject res = new JSONObject()
+                        .put("Action", json.getString("Action"))
+                        .put("State", "Failed")
+                        .put("Msg", "Invalid Action");
+                req.Send(res);
+                break;
         }
 
     }
 
     /**
-     * BroadCastMsg BroadCastMsg
+     * BroadCastMsg 无差别广播消息
      * req Struct{
      * Action BroadCastMsg
      * Name
@@ -73,7 +80,7 @@ public class ChatServer implements RequestCallback {
         if (!reqJSON.has("Name") || !reqJSON.has("SessionID") || !reqJSON.has("Message")) {
             resJSON.put("State", "Failed")
                     .put("Msg", "Invalid Request Parameter");
-            req.Response(resJSON);
+            req.Send(resJSON);
             return;
         }
 
@@ -93,13 +100,13 @@ public class ChatServer implements RequestCallback {
         if (!Sessions.containsKey(name) || !Sessions.get(name).equals(sessionID)) {
             resJSON.put("State", "Failed")
                     .put("Msg", "Invalid Request Parameter");
-            req.Response(resJSON);
+            req.Send(resJSON);
             return;
         }
 
         resJSON.put("State", "Success")
                 .put("Msg", "Success");
-        req.Response(resJSON);
+        req.Send(resJSON);
 
         if (exceptNames == null) {
             BroadCast(message);
@@ -139,7 +146,7 @@ public class ChatServer implements RequestCallback {
         if (!reqJSON.has("Name") || !reqJSON.has("SessionID") || !reqJSON.has("To") || !reqJSON.has("Message")) {
             resJSON.put("State", "Failed")
                     .put("Msg", "Invalid Request Parameter");
-            req.Response(resJSON);
+            req.Send(resJSON);
             return;
         }
 
@@ -151,21 +158,21 @@ public class ChatServer implements RequestCallback {
         if (!Sessions.containsKey(name) || !Sessions.get(name).equals(sessionID)) {
             resJSON.put("State", "Failed")
                     .put("Msg", "Invalid Request Parameter");
-            req.Response(resJSON);
+            req.Send(resJSON);
             return;
         }
 
         if (!Clients.containsKey(to)) {
             resJSON.put("State", "Failed")
                     .put("Msg", to + " is not online.");
-            req.Response(resJSON);
+            req.Send(resJSON);
             return;
         }
 
         if (to.equals(name)) {
             resJSON.put("State", "Failed")
                     .put("Msg", "Stop talking to yourself!");
-            req.Response(resJSON);
+            req.Send(resJSON);
             return;
         }
 
@@ -173,14 +180,14 @@ public class ChatServer implements RequestCallback {
         //https://stackoverflow.com/questions/44117788/performance-between-string-format-and-stringbuilder
         resJSON.put("State", "Success")
                 .put("Msg", "Success");
-        req.Response(resJSON);
+        req.Send(resJSON);
 
         JSONObject sendJSON = new JSONObject();
         sendJSON.put("Action", "Message");
         sendJSON.put("State", "Success")
                 .put("From", name)
                 .put("Msg", message);
-        Clients.get(to).Response(sendJSON);
+        Clients.get(to).Send(sendJSON);
 
     }
 
@@ -201,21 +208,21 @@ public class ChatServer implements RequestCallback {
      * @param reqJSON json
      */
     private static void SignIn(Request req, JSONObject reqJSON) {
-        String name = reqJSON.getString("Name");
         JSONObject resJSON = new JSONObject();
         resJSON.put("Action", "SignIn");
-
         if (!reqJSON.has("Name")) {
             resJSON.put("State", "Failed")
                     .put("Msg", "Invalid Request Parameter");
-            req.Response(resJSON);
+            req.Send(resJSON);
             return;
         }
+
+        String name = reqJSON.getString("Name");
 
         if (Clients.containsKey(name)) {
             resJSON.put("State", "Failed")
                     .put("Msg", "Name exist, please choose another name");
-            req.Response(resJSON);
+            req.Send(resJSON);
             return;
         }
         Clients.put(name, req);
@@ -223,7 +230,7 @@ public class ChatServer implements RequestCallback {
         resJSON.put("State", "Success")
                 .put("Msg", "You have logined")
                 .put("SessionID", Sessions.get(name));
-        req.Response(resJSON);
+        req.Send(resJSON);
         BroadCastExcept(new String[]{name}, name + " has logined");
     }
 
@@ -250,7 +257,7 @@ public class ChatServer implements RequestCallback {
         if (!reqJSON.has("Name") || !reqJSON.has("SessionID")) {
             resJSON.put("State", "Failed")
                     .put("Msg", "Invalid Request Parameter");
-            req.Response(resJSON);
+            req.Send(resJSON);
             return;
         }
 
@@ -260,7 +267,7 @@ public class ChatServer implements RequestCallback {
         if (!Sessions.containsKey(name) || !Sessions.get(name).equals(sessionID)) {
             resJSON.put("State", "Failed")
                     .put("Msg", "Invalid Request Parameter");
-            req.Response(resJSON);
+            req.Send(resJSON);
             return;
         }
 
@@ -269,7 +276,7 @@ public class ChatServer implements RequestCallback {
 
         resJSON.put("State", "Success")
                 .put("Msg", "quit success");
-        req.Response(resJSON);
+        req.Send(resJSON);
 
         BroadCast(name + " has quit.");
 
@@ -298,7 +305,7 @@ public class ChatServer implements RequestCallback {
         if (!reqJSON.has("Name") || !reqJSON.has("SessionID")) {
             resJSON.put("State", "Failed")
                     .put("Msg", "Invalid Request Parameter");
-            req.Response(resJSON);
+            req.Send(resJSON);
             return;
         }
 
@@ -308,7 +315,7 @@ public class ChatServer implements RequestCallback {
         if (!Sessions.containsKey(name) || !Sessions.get(name).equals(sessionID)) {
             resJSON.put("State", "Failed")
                     .put("Msg", "Invalid Request Parameter");
-            req.Response(resJSON);
+            req.Send(resJSON);
             return;
         }
         StringBuilder sb = new StringBuilder(5 * Sessions.size());
@@ -318,7 +325,7 @@ public class ChatServer implements RequestCallback {
         sb.append("Total online user: ").append(Sessions.size());
         resJSON.put("State", "Success")
                 .put("Msg", sb.toString());
-        req.Response(resJSON);
+        req.Send(resJSON);
     }
 
     /**
@@ -351,7 +358,7 @@ public class ChatServer implements RequestCallback {
                 }
             }
             if (!except) {
-                entry.getValue().Response(resJSON);
+                entry.getValue().Send(resJSON);
             }
         }
 
@@ -376,7 +383,7 @@ public class ChatServer implements RequestCallback {
                 .put("From", "Server")
                 .put("Msg", Msg);
         for (ConcurrentHashMap.Entry<String, Request> entry : Clients.entrySet()) {
-            entry.getValue().Response(resJSON);
+            entry.getValue().Send(resJSON);
         }
     }
 
