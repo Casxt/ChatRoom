@@ -1,5 +1,6 @@
 package Request;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -69,7 +70,13 @@ public class Request {
      */
     void DataReadComplete(byte[] data) {
         String s = new String(data, java.nio.charset.StandardCharsets.UTF_8);
-        JSONObject json = new JSONObject(s);
+        JSONObject json;
+        try {
+            json = new JSONObject(s);
+        } catch (JSONException e) {
+            return;
+        }
+
         //判断是否是等待的结果
         if (blocking && json.getString("Action").equals(waitAction)) {
             tempRes = json;
