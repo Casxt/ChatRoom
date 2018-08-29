@@ -1,7 +1,6 @@
 import Request.Request;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -12,12 +11,6 @@ import static org.mockito.Mockito.*;
 
 class ChatServerTest {
     private ChatServer chatServer = new ChatServer();
-
-    @BeforeAll
-    static void init() {
-    }
-
-
     /**
      * 测试Route模块
      */
@@ -34,7 +27,7 @@ class ChatServerTest {
     }
 
     /**
-     * 测试Signin模块
+     * 测试Sign In模块
      */
     @Test
     void SignIn() {
