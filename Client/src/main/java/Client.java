@@ -214,7 +214,7 @@ public class Client implements RequestCallback {
 
         //考虑到命令格式都比较简单，故不使用正则匹配，另一方面也更加高效
         while (!endProgramFlag) {
-            cmd = scanner.nextLine();
+            cmd = scanner.nextLine().replace("[(^\\s)(\\s$)]", "");
             if (UserName == null && cmd.startsWith("/login ")) {
                 //登陆
                 SignIn(cmd.substring("/login ".length()));

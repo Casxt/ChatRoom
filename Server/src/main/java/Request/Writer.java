@@ -76,6 +76,9 @@ public class Writer implements CompletionHandler<Integer, ByteBuffer> {
     public void failed(Throwable e, ByteBuffer buffer) {
         if (e instanceof java.nio.channels.InterruptedByTimeoutException) {
             req.Close();
+        } else if (e instanceof java.nio.channels.WritePendingException) {
+            log.warning("WritePendingException");
+            req.Close();
         } else if (e instanceof java.io.IOException) {
             log.warning("Connection lost");
             req.Close();
