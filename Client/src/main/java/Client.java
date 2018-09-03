@@ -206,7 +206,8 @@ public class Client implements RequestCallback {
             serverCh.connect(address).get();
         } catch (IOException | InterruptedException | ExecutionException e) {
             System.out.println("Connect Failed...");
-            e.printStackTrace();
+            //e.printStackTrace();
+            return;
         }
         request.Bundle(serverCh);
         System.out.println("Please login");
