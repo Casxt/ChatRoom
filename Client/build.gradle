@@ -4,7 +4,8 @@ plugins {
 
 group 'Maple'
 version '1.0-SNAPSHOT'
-
+// jar或者war的名字
+archivesBaseName = 'Client'
 sourceCompatibility = 1.10
 
 repositories {
